@@ -1,0 +1,32 @@
+{
+  "name": "looker-force-directed-graph",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Josh Rosen <josh@hashpath.com>",
+  "private": true,
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "watch": "webpack --config webpack.config.js --watch --progress",
+    "lint": "tslint --project tsconfig.json --format stylish 'src/**/*.ts'",
+    "lint-fix": "tslint --fix --project tsconfig.json  --format stylish 'src/**/*.ts'"
+  },
+  "devDependencies": {
+    "css-loader": "^0.28.11",
+    "d3": "^5.8.2",
+    "to-string-loader": "^1.1.5",
+    "ts-loader": "^4.5.0",
+    "tslint": "5.8.0",
+    "tslint-config-standard": "7.0.0",
+    "uglifyjs-webpack-plugin": "^1.2.5",
+    "webpack": "^4.29.0",
+    "webpack-cli": "^3.2.1",
+    "webpack-dev-server": "2.9.7",
+    "typescript": "3.2.4",
+    "jquery": "3.3.1",
+    "pivottable": "2.23.0",
+    "subtotal-multiple-aggregates": "4mile/subtotal-multiple-aggregates"
+  },
+  "dependencies": {
+    "@types/d3": "^5.0.0"
+  }
+}

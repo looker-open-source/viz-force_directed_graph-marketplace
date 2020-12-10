@@ -1,0 +1,15 @@
+{
+  "label": "Force-Directed Graph",
+  "category_label": "plug-ins",
+   "constants": {
+      "vis_label": {
+          "label": "Force-Directed Graph",
+          "description": "Use a force-directed graph to show relationships between entities in your data."
+      },
+      "vis_id": {
+          "label": "force-directed-graph",
+          "description": "Force-Directed Graph",
+          "value_constraint": "visualization"
+      }
+  }
+}
