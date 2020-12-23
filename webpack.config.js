@@ -3,46 +3,49 @@ var path = require("path");
 const UglifyJSPlugin = require("uglifyjs-webpack-plugin");
 
 var webpackConfig = {
-  mode: 'production',
+  mode: "development",
   entry: {
-    forcedirected: './src/force-directed.ts',
+    forcedirected: "./src/force-directed.ts",
   },
   devServer: {
-    contentBase: './dist',
+    contentBase: "./dist",
   },
   output: {
     filename: "[name].js",
     path: __dirname,
     library: "[name]",
-    libraryTarget: "umd"
+    libraryTarget: "umd",
   },
   resolve: {
-    extensions: [".webpack.js", ".web.js", ".ts", ".js"]
+    extensions: [".webpack.js", ".web.js", ".ts", ".js"],
   },
-  plugins: [new UglifyJSPlugin()],
+  optimization: {
+    minimize: false,
+  },
+  // plugins: [new UglifyJSPlugin()],
   module: {
-    rules: [{
+    rules: [
+      {
         test: /\.ts$/,
         use: [
-    {
-      loader: "ts-loader"
-    }
-        ]
-        },
-        {
+          {
+            loader: "ts-loader",
+          },
+        ],
+      },
+      {
         test: /\.css$/,
         use: [
-    {
-      loader: "to-string-loader"
-    },
-                {
-                  loader: "css-loader"
-                }
-              ]
-        }
-           
-         ]
-  }
+          {
+            loader: "to-string-loader",
+          },
+          {
+            loader: "css-loader",
+          },
+        ],
+      },
+    ],
+  },
 };
 
 module.exports = webpackConfig;

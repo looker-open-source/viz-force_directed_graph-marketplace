@@ -8,13 +8,9 @@
     "strictNullChecks": false,
     "outDir": "lib",
     "strict": true,
-    "lib": [ "dom", "es6", "es2015.collection" ],
+    "lib": ["dom", "es6", "es2015.collection"],
     "target": "es5"
   },
-  "exclude": [
-    "node_modules"
-  ],
-  "rootDir": [
-    "src/"
-  ]
+  "exclude": ["node_modules"],
+  "rootDir": ["src/"]
 }
