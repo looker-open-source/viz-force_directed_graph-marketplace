@@ -133,25 +133,52 @@ const vis: ForceDirectedGraphVisualization = {
         color = colorScale.range(config.color_range)
     }
 
-    var nodes_unique = []
-    var nodes = []
-    var links = []
+    var nodes_unique = [];
+    var groups_unique = [];
+    var nodes = [];
+    var links = [];
 
     // First make the nodes array
     data.forEach((row: Row) => {
-       if (nodes_unique.indexOf(row[dimensions[0].name].value) == -1) {
-	  nodes_unique.push(row[dimensions[0].name].value);
-          const newnode = { id: row[dimensions[0].name].value, group: row[dimensions[1].name].value};
-          nodes.push(newnode);
-       }
-       if (nodes_unique.indexOf(row[dimensions[2].name].value) == -1) {
-	  nodes_unique.push(row[dimensions[2].name].value);
-          const newnode = { id: row[dimensions[2].name].value, group: row[dimensions[3].name].value};
-          nodes.push(newnode);
-       }
-       const newlink = { source: row[dimensions[0].name].value, target: row[dimensions[2].name].value, value: row[measure.name].value};
-       links.push(newlink);
-    })
+      if (
+        row[dimensions[0].name].value === null ||
+        row[dimensions[2].name].value === null
+      ) {
+        return;
+      }
+      if (nodes_unique.indexOf(row[dimensions[0].name].value) == -1) {
+        nodes_unique.push(row[dimensions[0].name].value)
+        if(groups_unique.indexOf(row[dimensions[1].name].value) == -1) {
+          groups_unique.push(row[dimensions[1].name].value)
+        }
+        const newnode = {
+          id: row[dimensions[0].name].value,
+          group: row[dimensions[1].name].value,
+          nodeField: dimensions[0].label_short || dimensions[0].short,
+          groupField: dimensions[1].label_short || dimensions[1].short,
+        };
+        nodes.push(newnode);
+      }
+      if (nodes_unique.indexOf(row[dimensions[2].name].value) == -1) {
+        nodes_unique.push(row[dimensions[2].name].value);
+        if(groups_unique.indexOf(row[dimensions[3].name].value) == -1) {
+          groups_unique.push(row[dimensions[3].name].value);
+        }
+        const newnode = {
+          id: row[dimensions[2].name].value,
+          group: row[dimensions[3].name].value,
+          nodeField: dimensions[2].label_short || dimensions[2].label,
+          groupField: dimensions[3].label_short || dimensions[3].label,
+        };
+        nodes.push(newnode);
+      }
+      const newlink = {
+        source: row[dimensions[0].name].value,
+        target: row[dimensions[2].name].value,
+        value: row[measure.name].value,
+      };
+      links.push(newlink);
+    });
 
     var manybody = d3.forceManyBody()
     //manybody.strength(-7)
