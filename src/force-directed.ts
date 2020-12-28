@@ -48,17 +48,10 @@ const vis: ForceDirectedGraphVisualization = {
       display_size: "half",
       order: 4,
     },
-    legend: {
-      type: "boolean",
-      label: "Node Legend",
-      display_size: "half",
-      default: true,
-      order: 5,
-    },
     labelTypes: {
       type: "string",
       label: "Label Node Types",
-      // placeholder: "Enter group values (dims 2 and 4) to label",
+      placeholder: "Enter group values (dims 2 or 4) to label",
       default: "",
       order: 6,
     },
@@ -93,8 +86,9 @@ const vis: ForceDirectedGraphVisualization = {
       label: "Link Weight Function",
       values: [
         { "Square Root": "sqrt" },
-        { log10: "log10" },
+        { "Cube Root": "cbrt" },
         { log2: "log2" },
+        { log10: "log10" },
       ],
       default: "sqrt",
       order: 10,
@@ -133,7 +127,7 @@ const vis: ForceDirectedGraphVisualization = {
         max_pivots: 0,
         min_dimensions: 4,
         max_dimensions: 4,
-        min_measures: 1,
+        min_measures: 0,
         max_measures: 1,
       })
     )
@@ -185,7 +179,7 @@ const vis: ForceDirectedGraphVisualization = {
     };
 
     const dimensions = queryResponse.fields.dimension_like;
-    const measure = queryResponse.fields.measure_like[0];
+    const measure = queryResponse.fields.measure_like[0] || null;
     const format = d3.format(",d");
 
     const colorScale = d3.scaleOrdinal();
@@ -236,7 +230,7 @@ const vis: ForceDirectedGraphVisualization = {
       const newlink = {
         source: row[dimensions[0].name].value,
         target: row[dimensions[2].name].value,
-        value: row[measure.name].value,
+        value: measure ? row[measure.name].value : 1,
       };
       links.push(newlink);
     });
@@ -269,10 +263,14 @@ const vis: ForceDirectedGraphVisualization = {
       .attr("stroke-width", (d) => {
         var f = {
           sqrt: (d) => Math.sqrt(d),
+          cbrt: (d) => Math.cbrt(d),
           log2: (d) => Math.log2(d),
           log10: (d) => Math.log10(d),
         };
-        return f[config.edge_weight](d.value);
+        if (measure) {
+          return f[config.edge_weight](d.value);
+        }
+        return d.value
       });
 
     var node = svg
@@ -297,38 +295,6 @@ const vis: ForceDirectedGraphVisualization = {
       labelTypes = config.labelTypes.split(",");
     }
 
-    if (config.legend) {
-      var legendRectSize = 18;
-      var legendSpacing = 4;
-      var legend = svg
-        .selectAll(".legend")
-        .data(groups_unique)
-        .enter()
-        .append("g")
-        .attr("class", "legend")
-        .attr("transform", function (d, i) {
-          var height = legendRectSize + legendSpacing;
-          var x = 2 * legendRectSize;
-          var y = i * height;
-          return "translate(" + x + "," + y + ")";
-        });
-
-      legend
-        .append("rect")
-        .attr("width", legendRectSize)
-        .attr("height", legendRectSize)
-        .style("fill", (d) => color(d))
-        .style("stroke", (d) => color(d));
-
-      legend
-        .append("text")
-        .attr("x", legendRectSize + legendSpacing)
-        .attr("y", legendRectSize - legendSpacing)
-        .attr("font-size", 10)
-        .text(function (d) {
-          return d;
-        });
-    }
 
     if (config.labelTypes && config.labelTypes.length) {
       node
