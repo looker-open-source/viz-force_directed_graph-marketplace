@@ -1,16 +1,15 @@
-constant: vis_id {
+constant: VIS_ID {
   value: "force-directed-graph"
   export: override_optional
 }
 
-constant: vis_label {
+constant: VIS_LABEL {
   value: "Force-Directed Graph"
   export: override_optional
 }
 
 visualization: {
-  id: "@{vis_id}"
-  label: "@{vis_label}"
+  id: "@{VIS_ID}"
+  label: "@{VIS_LABEL}"
   file: "forcedirected.js"
-  dependencies: []
 }
