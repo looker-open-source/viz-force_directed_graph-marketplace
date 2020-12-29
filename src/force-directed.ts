@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { formatType, handleErrors } from "./utils";
+import { handleErrors } from "./utils";
 
 import { Row, Looker, VisualizationDefinition } from "./types";
 
@@ -120,7 +120,7 @@ const vis: ForceDirectedGraphVisualization = {
     this.svg = d3.select(element).append("svg");
   },
   // Render in response to the data or settings changing
-  update(data, element, config, queryResponse, details) {
+  updateAsync(data, element, config, queryResponse, details, done) {
     if (
       !handleErrors(this, queryResponse, {
         min_pivots: 0,
@@ -133,25 +133,28 @@ const vis: ForceDirectedGraphVisualization = {
     )
       return;
 
-    // Work around bug in Looker where sometimes it's called without config
-    if (!config.color_range) {
-      return;
+    // Catch the rare edge case on DB-next that the config is unset
+    const applyDefualtConfig = () => {
+      for (let option in this.options) {
+        if (config[option] === undefined) {
+          config[option] = this.options[option].default;
+        }
+      }
+    };
+
+    // If color_picker is undefined, chances are
+    // all other config attributes are also undefined
+    if (config.color_range === undefined) {
+      applyDefualtConfig();
     }
 
     this.svg.selectAll("*").remove();
 
     const height = element.clientHeight + 20;
     const width = element.clientWidth;
+    const radius = config.circle_radius;
+    const linkDistance = config.linkDistance;
 
-    var radius = 5;
-    if (config.circle_radius) {
-      radius = config.circle_radius;
-    }
-
-    var linkDistance = 30;
-    if (config.linkDistance) {
-      linkDistance = config.linkDistance;
-    }
 
     const drag = (simulation) => {
       function dragstarted(d) {
@@ -180,7 +183,6 @@ const vis: ForceDirectedGraphVisualization = {
 
     const dimensions = queryResponse.fields.dimension_like;
     const measure = queryResponse.fields.measure_like[0] || null;
-    const format = d3.format(",d");
 
     const colorScale = d3.scaleOrdinal();
     var color = colorScale.range(d3.schemeCategory10);
@@ -261,16 +263,16 @@ const vis: ForceDirectedGraphVisualization = {
       .enter()
       .append("line")
       .attr("stroke-width", (d) => {
-        var f = {
+        var func = {
           sqrt: (d) => Math.sqrt(d),
           cbrt: (d) => Math.cbrt(d),
           log2: (d) => Math.log2(d),
           log10: (d) => Math.log10(d),
         };
         if (measure) {
-          return f[config.edge_weight](d.value);
+          return func[config.edge_weight](d.value);
         }
-        return d.value
+        return d.value;
       });
 
     var node = svg
@@ -294,7 +296,6 @@ const vis: ForceDirectedGraphVisualization = {
     if (config.labelTypes && config.labelTypes.length) {
       labelTypes = config.labelTypes.split(",");
     }
-
 
     if (config.labelTypes && config.labelTypes.length) {
       node
@@ -335,9 +336,6 @@ const vis: ForceDirectedGraphVisualization = {
     node.append("title").text(function (d) {
       return `${d.groupField} - ${d.group}\n${d.nodeField} -  ${d.id}`;
     });
-    
-
-    var initialized = false;
 
     simulation.on("tick", () => {
       link
@@ -387,6 +385,7 @@ const vis: ForceDirectedGraphVisualization = {
           }
         });
     });
+    done();
   },
 };
 

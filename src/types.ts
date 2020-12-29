@@ -117,6 +117,7 @@ export interface VisUpdateDetails {
     queryResponse?: boolean;
     size?: boolean;
   };
+  print?: boolean;
 }
 
 export interface VisOption {

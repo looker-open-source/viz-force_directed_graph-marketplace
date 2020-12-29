@@ -13,6 +13,7 @@
   "devDependencies": {
     "d3": "^5.8.2",
     "pivottable": "2.23.0",
+    "prettier": "^2.2.1",
     "ts-loader": "^4.5.0",
     "tslint": "5.8.0",
     "tslint-config-standard": "7.0.0",
