@@ -11,12 +11,8 @@
     "lint-fix": "tslint --fix --project tsconfig.json  --format stylish 'src/**/*.ts'"
   },
   "devDependencies": {
-    "css-loader": "^0.28.11",
     "d3": "^5.8.2",
-    "jquery": "3.3.1",
     "pivottable": "2.23.0",
-    "subtotal-multiple-aggregates": "4mile/subtotal-multiple-aggregates",
-    "to-string-loader": "^1.1.5",
     "ts-loader": "^4.5.0",
     "tslint": "5.8.0",
     "tslint-config-standard": "7.0.0",
