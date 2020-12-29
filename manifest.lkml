@@ -1,5 +1,5 @@
 constant: VIS_ID {
-  value: "force-directed-graph"
+  value: "force_directed_graph-marketplace"
   export: override_optional
 }
 
