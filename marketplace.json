@@ -2,7 +2,7 @@
   "label": "Force-Directed Graph",
   "category_label": "Plug-ins",
   "branding": {
-    "image_uri": "https://marketplace-api.looker.com/TODO",
+    "image_uri": "https://marketplace-api.looker.com/visualization-screenshots/force-directed_icon.png",
     "tagline": "Use a force-directed graph to show relationships between entities in your data."
   },
   "constants": {
