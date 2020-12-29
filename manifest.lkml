@@ -11,5 +11,5 @@ constant: VIS_LABEL {
 visualization: {
   id: "@{VIS_ID}"
   label: "@{VIS_LABEL}"
-  file: "forcedirected.js"
+  url: "https://marketplace-api.looker.com/viz-dist/forcedirected.js"
 }
