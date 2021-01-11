@@ -1,5 +1,6 @@
 {
   "label": "Force-Directed Graph",
+<<<<<<< HEAD
   "category_label": "plug-ins",
   "constants": {
     "vis_label": {
@@ -9,6 +10,21 @@
     "vis_id": {
       "label": "force-directed-graph",
       "description": "Force-Directed Graph",
+=======
+  "category_label": "Plug-ins",
+  "branding": {
+    "image_uri": "https://marketplace-api.looker.com/visualization-screenshots/force-directed_icon.png",
+    "tagline": "Use a force-directed graph to show relationships between entities in your data."
+  },
+  "constants": {
+    "VIS_LABEL": {
+      "label": "Visualization Label",
+      "description": "This label will appear in the visualization selector in the Looker Explore UI."
+    },
+    "VIS_ID": {
+      "label": "Visualization ID",
+      "description": "This ID must be unique across all custom visualizations on your instance.",
+>>>>>>> 4e5942abbd5ef9576d5d749a83dea1b96f0f2b22
       "value_constraint": "visualization"
     }
   }

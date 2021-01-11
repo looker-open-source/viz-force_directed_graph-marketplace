@@ -1,14 +1,8 @@
 import * as d3 from "d3";
-import { formatType, handleErrors } from "./utils";
+import { handleErrors } from "./utils";
+import {nodeTooltip, linkTooltip, updatePosition, hideTooltip } from "./tooltip"
 
 import { Row, Looker, VisualizationDefinition } from "./types";
-import {
-  hideTooltip,
-  initTooltip,
-  linkTooltip,
-  nodeTooltip,
-  updatePosition,
-} from "./tooltip";
 
 // Global values provided via the API
 declare var looker: Looker;
@@ -23,7 +17,7 @@ const vis: ForceDirectedGraphVisualization = {
   options: {
     color_range: {
       type: "array",
-      label: "Color Range",
+      label: "Node Color Range",
       display: "colors",
       display_size: "half",
       default: [
@@ -51,9 +45,16 @@ const vis: ForceDirectedGraphVisualization = {
     labels: {
       type: "boolean",
       label: "Show Labels",
-      display_size: "half",
       default: false,
+      display_size: "half",
       order: 4,
+    },
+    labelTypes: {
+      type: "string",
+      label: "Label Node Types",
+      placeholder: "Enter group values (dims 2 or 4) to label",
+      default: "",
+      order: 6,
     },
     font_weight: {
       type: "string",
@@ -62,50 +63,57 @@ const vis: ForceDirectedGraphVisualization = {
       display_size: "half",
       values: [{ Normal: "normal" }, { Bold: "bold" }],
       default: "normal",
-      order: 3,
+      order: 7,
     },
     font_size: {
       type: "string",
       label: "Label Font Size",
       display_size: "half",
       default: ["10"],
-      order: 3,
+      order: 8,
     },
-    circle_radius: {
+    link_color: {
       type: "string",
-      label: "Circle Radius",
-      default: 5,
+      display: "color",
+      display_size: "half",
+      label: "Link Color",
+      default: ["#000000"],
+      order: 9,
+    },
+    edge_weight: {
+      type: "string",
+      display: "select",
+      display_size: "half",
+      label: "Link Weight Function",
+      values: [
+        { "Square Root": "sqrt" },
+        { "Cube Root": "cbrt" },
+        { log2: "log2" },
+        { log10: "log10" },
+      ],
+      default: "sqrt",
+      order: 10,
     },
     linkDistance: {
       type: "number",
       display: "range",
       label: "Link Distance",
       default: 30,
-      min: 1,
-      max: 200,
+      min: 5,
+      max: 300,
       step: 5,
+      order: 11,
     },
-    link_color: {
-      type: "string",
-      display: "color",
-      label: "Link Color",
-      default: ["#000000"],
+    circle_radius: {
+      type: "number",
+      display: "range",
+      label: "Circle Radius",
+      min: 1,
+      max: 40,
+      step: 1,
+      default: 5,
+      order: 12,
     },
-    labelTypes: {
-      type: "string",
-      label: "Label Node Types",
-      default: [],
-    },
-    tooltip: {
-      type: "boolean",
-      label: "Tooltip",
-      default: true,
-    },
-    legend: {
-      type: "boolean",
-      label: "Group Legend",
-      default: true
-    }
   },
   // Set up the initial state of the visualization
   create(element, config) {
@@ -120,40 +128,38 @@ const vis: ForceDirectedGraphVisualization = {
         max_pivots: 0,
         min_dimensions: 4,
         max_dimensions: 4,
-        min_measures: 1,
+        min_measures: 0,
         max_measures: 1,
       })
     )
       return;
 
-    // Work around bug in Looker where sometimes it's called without config
-    if (!config.color_range) {
-      return;
+    // Catch the rare edge case on DB-next that the config is unset
+    const applyDefualtConfig = () => {
+      for (let option in this.options) {
+        if (config[option] === undefined) {
+          config[option] = this.options[option].default;
+        }
+      }
+    };
+
+    // If color_picker is undefined, chances are
+    // all other config attributes are also undefined
+    if (config.color_range === undefined) {
+      applyDefualtConfig();
     }
 
     this.svg.selectAll("*").remove();
 
     const height = element.clientHeight + 20;
     const width = element.clientWidth;
-
-    var radius = 5;
-    if (config.circle_radius) {
-      radius = config.circle_radius;
-    }
-
-    var linkDistance = 30;
-    if (config.linkDistance) {
-      linkDistance = config.linkDistance;
-    }
-
-    if (config.tooltip) {
-      initTooltip();
-    }
-
-    var isDragging = false;
+    const radius = config.circle_radius;
+    const linkDistance = config.linkDistance;
+    
+    let isDragging = false
     const drag = (simulation) => {
       function dragstarted(d) {
-        isDragging = true;
+        isDragging = true
         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
         d.fy = d.y;
@@ -168,7 +174,7 @@ const vis: ForceDirectedGraphVisualization = {
         if (!d3.event.active) simulation.alphaTarget(0);
         d.fx = null;
         d.fy = null;
-        isDragging = false;
+        isDragging = false
       }
 
       return d3
@@ -179,8 +185,7 @@ const vis: ForceDirectedGraphVisualization = {
     };
 
     const dimensions = queryResponse.fields.dimension_like;
-    const measure = queryResponse.fields.measure_like[0];
-    const format = d3.format(",d");
+    const measure = queryResponse.fields.measure_like[0] || null;
 
     const colorScale = d3.scaleOrdinal();
     var color = colorScale.range(d3.schemeCategory10);
@@ -202,9 +207,9 @@ const vis: ForceDirectedGraphVisualization = {
         return;
       }
       if (nodes_unique.indexOf(row[dimensions[0].name].value) == -1) {
-        nodes_unique.push(row[dimensions[0].name].value)
-        if(groups_unique.indexOf(row[dimensions[1].name].value) == -1) {
-          groups_unique.push(row[dimensions[1].name].value)
+        nodes_unique.push(row[dimensions[0].name].value);
+        if (groups_unique.indexOf(row[dimensions[1].name].value) == -1) {
+          groups_unique.push(row[dimensions[1].name].value);
         }
         const newnode = {
           id: row[dimensions[0].name].value,
@@ -216,7 +221,7 @@ const vis: ForceDirectedGraphVisualization = {
       }
       if (nodes_unique.indexOf(row[dimensions[2].name].value) == -1) {
         nodes_unique.push(row[dimensions[2].name].value);
-        if(groups_unique.indexOf(row[dimensions[3].name].value) == -1) {
+        if (groups_unique.indexOf(row[dimensions[3].name].value) == -1) {
           groups_unique.push(row[dimensions[3].name].value);
         }
         const newnode = {
@@ -230,7 +235,7 @@ const vis: ForceDirectedGraphVisualization = {
       const newlink = {
         source: row[dimensions[0].name].value,
         target: row[dimensions[2].name].value,
-        value: row[measure.name].value,
+        value: measure ? row[measure.name].value : 1,
       };
       links.push(newlink);
     });
@@ -261,8 +266,16 @@ const vis: ForceDirectedGraphVisualization = {
       .enter()
       .append("line")
       .attr("stroke-width", (d) => {
-        let relativeWeight = Math.sqrt(d.value);
-        return relativeWeight;
+        var func = {
+          sqrt: (d) => Math.sqrt(d),
+          cbrt: (d) => Math.cbrt(d),
+          log2: (d) => Math.log2(d),
+          log10: (d) => Math.log10(d),
+        };
+        if (measure) {
+          return func[config.edge_weight](d.value);
+        }
+        return d.value;
       })
       .on("mouseover", (d) => {
         if (config.tooltip) {
@@ -303,6 +316,7 @@ const vis: ForceDirectedGraphVisualization = {
         }
       })
       .on("mouseleave mousedown", hideTooltip);
+  
 
     var labelTypes = [];
     if (config.labelTypes && config.labelTypes.length) {
@@ -319,7 +333,7 @@ const vis: ForceDirectedGraphVisualization = {
         .style("font-weight", config.font_weight)
         .text(function (d) {
           if (labelTypes.indexOf(d.group) > -1) {
-            return d.id;
+            return d.nodeField + " - " + d.id;
           } else {
             return null;
           }
@@ -327,7 +341,7 @@ const vis: ForceDirectedGraphVisualization = {
 
       node.append("title").text(function (d) {
         if (labelTypes.indexOf(d.group) == -1) {
-          return d.id;
+          return d.nodeField + " - " + d.id;
         } else {
           return null;
         }
@@ -343,41 +357,11 @@ const vis: ForceDirectedGraphVisualization = {
         .text(function (d) {
           return d.id;
         });
-    } else {
-      node.append("title").text(function (d) {
-        return d.id;
-      });
     }
 
-    if (config.legend) {
-      var legendRectSize = 18;
-      var legendSpacing = 4; 
-      var legend = svg.selectAll(".legend")
-        .data(groups_unique)
-        .enter()
-        .append("g")
-        .attr("class", "legend")
-        .attr('transform', function(d, i) {
-          var height = legendRectSize + legendSpacing;
-          var x = 2 * legendRectSize;
-          var y = i * height;
-          return 'translate(' + x + ',' + y + ')';
-        });
-
-      legend.append('rect')
-        .attr('width', legendRectSize) 
-        .attr('height', legendRectSize)
-        .style('fill', (d) => color(d))
-        .style('stroke', (d) => color(d));    
-   
-      legend.append('text')                
-        .attr('x', legendRectSize + legendSpacing)
-        .attr('y', legendRectSize - legendSpacing)
-        .text(function(d) { return d; });
-    }
-
-
-    var initialized = false;
+    node.append("title").text(function (d) {
+      return `${d.groupField} - ${d.group}\n${d.nodeField} -  ${d.id}`;
+    });
 
     simulation.on("tick", () => {
       link
