@@ -3,7 +3,7 @@ var path = require("path");
 const UglifyJSPlugin = require("uglifyjs-webpack-plugin");
 
 var webpackConfig = {
-  mode: "development",
+  mode: "production",
   entry: {
     forcedirected: "./src/force-directed.ts",
   },
