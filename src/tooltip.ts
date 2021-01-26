@@ -1,6 +1,10 @@
 import { select, selectAll } from "d3";
+import { format as SSF } from "ssf"
 
-export function initTooltip() {
+const yPadding = 15
+const xPadding = 5
+
+export function initTooltip(fontSize) {
   selectAll("#tooltip").remove();
   select("#vis")
     .insert("div", ":first-child")
@@ -12,42 +16,60 @@ export function initTooltip() {
     .style("border-radius", "5px")
     .style("width", "auto")
     .style("text-align", "left")
-    .style("color", "#FFFFFF");
+    .style("padding", "5px")
+    .style("color", "#FFFFFF")
+    .style("font-size", fontSize + "px")
 }
 
-export function linkTooltip(d: any, event: MouseEvent, dragging: boolean) {
+export function linkTooltip(d: any, event: MouseEvent, dragging: boolean, measure: any, valFormat: string) {
   if (!dragging) {
-    console.log(d)
     let { pageX, pageY } = event;
+    let html = `Source: <b>${d.source.id}</b>`
+
+    if(d.source.id !== d.target.id) {
+      html += `<br/ >Target: <b>${d.target.id}</b> `
+    }
+    if(measure) {
+      html += `<br>${measure.label_short || measure.label}: <b>${SSF(valFormat, d.value)}</b>`
+    }
+
     select("#tooltip")
       .style("left", pageX - 20 + "px")
-      .style("top", pageY - 100 + "px")
+      .style("top", pageY - yOffset() + "px")
       .style("opacity", 1)
-      .text("HELLO");
+      .html(html)
   }
 }
 
 export function nodeTooltip(d: any, event: MouseEvent, dragging: boolean) {
   if (!dragging) {
-    console.log(d)
     let { pageX, pageY } = event;
+    let html = `${d.nodeField}: <b>${d.id}</b>`
+    if(d.id !== d.group) {
+      html += `<br/>${d.groupField}: <b>${d.group}</b>`
+    }
     select("#tooltip")
-      .style("left", pageX + 15 + "px")
-      .style("top", pageY + 15 + "px")
-      .html(`<b>${d.nodeField}</b>: ${d.id}`)
+      .style("left", pageX - 15 + "px")
+      .style("top", pageY - yOffset() + "px")
+      .html(html)
       .style("opacity", 1);
   }
 }
 
-export function updatePosition(d: any, event: MouseEvent, dragging: boolean) {
+export function updatePosition(d: any, event: MouseEvent, dragging: boolean, type: string) {
   if (!dragging) {
     let { pageX, pageY } = event;
     select("#tooltip")
-      .style("left", pageX - 20 + "px")
-      .style("top", pageY - 20 + "px");
+      .style("left", pageX - xPadding + "px")
+      .style("top", pageY - yOffset() + "px");
   }
 }
 
 export function hideTooltip() {
   select("#tooltip").style("opacity", 0).style("left", 0);
+}
+
+
+function yOffset() {
+  return parseInt(select("#tooltip").style("height"), 10) + yPadding
 }

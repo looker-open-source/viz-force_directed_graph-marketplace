@@ -1,8 +1,9 @@
 import * as d3 from "d3";
+import { legendColor } from "d3-svg-legend";
 import { handleErrors } from "./utils";
-import {nodeTooltip, linkTooltip, updatePosition, hideTooltip } from "./tooltip"
-
+import {nodeTooltip, linkTooltip, updatePosition, hideTooltip, initTooltip } from "./tooltip"
 import { Row, Looker, VisualizationDefinition } from "./types";
+
 
 // Global values provided via the API
 declare var looker: Looker;
@@ -15,8 +16,17 @@ const vis: ForceDirectedGraphVisualization = {
   id: "force-directed", // id/label not required, but nice for testing and keeping manifests in sync
   label: "Force Directed Graph",
   options: {
+
+    nodeDivider: {
+      section: "Graph",
+      type: "string",
+      label: "Nodes -----------------------------------------",
+      display: "divider",
+      order: 8
+    },
     color_range: {
       type: "array",
+      section: "Graph",
       label: "Node Color Range",
       display: "colors",
       display_size: "half",
@@ -32,56 +42,52 @@ const vis: ForceDirectedGraphVisualization = {
         "#bcbd22",
         "#17becf",
       ],
-      order: 1,
+      order: 9,
     },
-    font_color: {
-      type: "string",
-      display: "color",
+    circle_radius: {
+      section: "Graph",
+      type: "number",
+      display: "range",
       display_size: "half",
-      label: "Label Color",
-      default: ["#000000"],
-      order: 2,
+      label: "Circle Radius",
+      min: 1,
+      max: 40,
+      step: 1,
+      default: 5,
+      order: 10,
     },
-    labels: {
-      type: "boolean",
-      label: "Show Labels",
-      default: false,
-      display_size: "half",
-      order: 4,
-    },
-    labelTypes: {
+
+    linkDivider: {
+      section: "Graph",
       type: "string",
-      label: "Label Node Types",
-      placeholder: "Enter group values (dims 2 or 4) to label",
-      default: "",
-      order: 6,
-    },
-    font_weight: {
-      type: "string",
-      label: "Label Font Weight",
-      display: "select",
-      display_size: "half",
-      values: [{ Normal: "normal" }, { Bold: "bold" }],
-      default: "normal",
-      order: 7,
-    },
-    font_size: {
-      type: "string",
-      label: "Label Font Size",
-      display_size: "half",
-      default: ["10"],
-      order: 8,
+      label: "Links -----------------------------------------",
+      display: "divider",
+      order: 19
     },
     link_color: {
+      section: "Graph",
       type: "string",
       display: "color",
       display_size: "half",
       label: "Link Color",
       default: ["#000000"],
-      order: 9,
+      order: 20,
+    },
+    linkDistance: {
+      section: "Graph",
+      type: "number",
+      display: "range",
+      display_size: "half",
+      label: "Link Distance",
+      default: 30,
+      min: 5,
+      max: 300,
+      step: 5,
+      order: 21,
     },
     edge_weight: {
       type: "string",
+      section: "Graph",
       display: "select",
       display_size: "half",
       label: "Link Weight Function",
@@ -92,28 +98,92 @@ const vis: ForceDirectedGraphVisualization = {
         { log10: "log10" },
       ],
       default: "sqrt",
-      order: 10,
+      order: 22,
     },
-    linkDistance: {
-      type: "number",
-      display: "range",
-      label: "Link Distance",
-      default: 30,
-      min: 5,
-      max: 300,
-      step: 5,
-      order: 11,
+
+    labelDivider: {
+      section: "Labels",
+      type: "string",
+      display: "divider",
+      label: "Labels -----------------------------------------",
+      order: 90
     },
-    circle_radius: {
-      type: "number",
-      display: "range",
-      label: "Circle Radius",
-      min: 1,
-      max: 40,
-      step: 1,
-      default: 5,
-      order: 12,
+    font_color: {
+      section: "Labels",
+      type: "string",
+      display: "color",
+      display_size: "half",
+      label: "Label Color",
+      default: ["#000000"],
+      order: 91,
     },
+    labels: {
+      section: "Labels",
+      type: "boolean",
+      label: "Show Labels",
+      default: true,
+      display_size: "half",
+      order: 92,
+    },
+    labelTypes: {
+      section: "Labels",
+      type: "string",
+      label: "Filter Node Labels",
+      placeholder: "List of values from \"Start\"/\"End\" groups",
+      default: "",
+      order: 93,
+    },
+    font_weight: {
+      section: "Labels",
+      type: "string",
+      label: "Label Font Weight",
+      display: "select",
+      display_size: "half",
+      values: [{ Normal: "normal" }, { Bold: "bold" }],
+      default: "normal",
+      order: 94,
+    },
+    font_size: {
+      section: "Labels",
+      type: "string",
+      label: "Label Font Size",
+      display_size: "half",
+      default: ["10"],
+      order: 95,
+    },
+
+
+
+    tooltipDivider: {
+      section: "Labels",
+      label: "Tooltip -----------------------------------------",
+      type: "string",
+      display: "divider",
+      order: 100
+    },
+    tooltip: {
+      section: "Labels",
+      type: "boolean",
+      label: "Tooltip",
+      default: true,
+      order: 101
+    },
+    tooltipFont: {
+      section: "Labels",
+      type: "string",
+      display_size: "half",
+      label: "Tooltip Font Size",
+      default: "11",
+      order: 102
+    },
+    tooltipValFormat: {
+      section: "Labels",
+      type: "string",
+      display_size: "half",
+      label: "Value Format (measure)",
+      placeholder: "Spreadsheet-style value format",
+      order: 103
+    }
   },
   // Set up the initial state of the visualization
   create(element, config) {
@@ -122,6 +192,7 @@ const vis: ForceDirectedGraphVisualization = {
   },
   // Render in response to the data or settings changing
   updateAsync(data, element, config, queryResponse, details, done) {
+    this.clearErrors();
     if (
       !handleErrors(this, queryResponse, {
         min_pivots: 0,
@@ -148,13 +219,51 @@ const vis: ForceDirectedGraphVisualization = {
     if (config.color_range === undefined) {
       applyDefualtConfig();
     }
-
     this.svg.selectAll("*").remove();
 
+    if(config.tooltip) {
+      initTooltip(config.tooltipFont);
+    }
+
+    const NODE_1 = "Node_1"
+    const NODE_2 = "Node_2"
+    const GROUP_1 = "Group_1"
+    const GROUP_2 = "Group_2"    
+    let graphOptions = [NODE_1,  GROUP_1, NODE_2, GROUP_2]
+    let labels = ["Source nodes", "Source groups", "Target nodes", "Target groups"]
+
+    const generateOptions = (dimensions) => {
+      let newOptions = Object.assign({}, this.options)
+      let selections = dimensions.map(d => (
+        {[d.label_short || d.label]: d.name}
+      ))
+      graphOptions.forEach((g, i) => {
+        newOptions[g] = {
+          section: "Graph",
+          label: labels[i],
+          type: "string",
+          display: "select",
+          display_size: "half",
+          values: selections,
+          order: 10 + i,
+          default: dimensions[i].name
+        }
+      })
+      this.trigger('registerOptions', newOptions)
+    }
+    
     const height = element.clientHeight + 20;
     const width = element.clientWidth;
     const radius = config.circle_radius;
     const linkDistance = config.linkDistance;
+    const dimensions = queryResponse.fields.dimension_like;
+    const measure = queryResponse.fields.measure_like[0] || null;
+    const valFormat = measure.value_format || config.tooltipValFormat || "#,###";
+
+    generateOptions(dimensions)
+    if(config.NODE_1 === undefined || config.NODE_1 === ""){
+      generateOptions(dimensions)
+    }
     
     let isDragging = false
     const drag = (simulation) => {
@@ -184,8 +293,7 @@ const vis: ForceDirectedGraphVisualization = {
         .on("end", dragended);
     };
 
-    const dimensions = queryResponse.fields.dimension_like;
-    const measure = queryResponse.fields.measure_like[0] || null;
+
 
     const colorScale = d3.scaleOrdinal();
     var color = colorScale.range(d3.schemeCategory10);
@@ -201,44 +309,56 @@ const vis: ForceDirectedGraphVisualization = {
     // First make the nodes array
     data.forEach((row: Row) => {
       if (
-        row[dimensions[0].name].value === null ||
-        row[dimensions[2].name].value === null
+        row[config[NODE_1]].value === null ||
+        row[config[NODE_2]].value === null
       ) {
         return;
       }
-      if (nodes_unique.indexOf(row[dimensions[0].name].value) == -1) {
-        nodes_unique.push(row[dimensions[0].name].value);
-        if (groups_unique.indexOf(row[dimensions[1].name].value) == -1) {
-          groups_unique.push(row[dimensions[1].name].value);
+      if (nodes_unique.indexOf(row[config[NODE_1]].value) == -1) {
+        nodes_unique.push(row[config[NODE_1]].value);
+        if (groups_unique.indexOf(row[config[GROUP_1]].value) == -1) {
+          groups_unique.push(row[config[GROUP_1]].value);
         }
+        let nodeDim = dimensions.find(e => e.name === config[NODE_1])
+        let groupDim = dimensions.find(e => e.name === config[GROUP_1])
         const newnode = {
-          id: row[dimensions[0].name].value,
-          group: row[dimensions[1].name].value,
-          nodeField: dimensions[0].label_short || dimensions[0].short,
-          groupField: dimensions[1].label_short || dimensions[1].short,
+          id: row[config[NODE_1]].value,
+          group: row[config[GROUP_1]].value,
+          nodeField: nodeDim.label_short || nodeDim.short,
+          groupField: groupDim.label_short || groupDim.short,
         };
         nodes.push(newnode);
       }
-      if (nodes_unique.indexOf(row[dimensions[2].name].value) == -1) {
-        nodes_unique.push(row[dimensions[2].name].value);
-        if (groups_unique.indexOf(row[dimensions[3].name].value) == -1) {
-          groups_unique.push(row[dimensions[3].name].value);
+      if (nodes_unique.indexOf(row[config[NODE_2]].value) == -1) {
+        nodes_unique.push(row[config[NODE_2]].value);
+        if (groups_unique.indexOf(row[config[GROUP_2]].value) == -1) {
+          groups_unique.push(row[config[GROUP_2]].value);
         }
+        let nodeDim = dimensions.find(e => e.name === config[NODE_2])
+        let groupDim = dimensions.find(e => e.name === config[GROUP_2])
         const newnode = {
-          id: row[dimensions[2].name].value,
-          group: row[dimensions[3].name].value,
-          nodeField: dimensions[2].label_short || dimensions[2].label,
-          groupField: dimensions[3].label_short || dimensions[3].label,
+          id: row[config[NODE_2]].value,
+          group: row[config[GROUP_2]].value,
+          nodeField: nodeDim.label_short || nodeDim.label,
+          groupField: groupDim.label_short || nodeDim.label,
         };
         nodes.push(newnode);
       }
       const newlink = {
-        source: row[dimensions[0].name].value,
-        target: row[dimensions[2].name].value,
+        source: row[config[NODE_1]].value,
+        target: row[config[NODE_2]].value,
         value: measure ? row[measure.name].value : 1,
       };
       links.push(newlink);
     });
+
+    if(nodes.length < 1){
+      this.addError({
+        title: "No nodes to plot.",
+        message: "Check for null values in either the start or end nodes."
+      })
+      done();
+    }
 
     var manybody = d3.forceManyBody();
     //manybody.strength(-7)
@@ -277,17 +397,21 @@ const vis: ForceDirectedGraphVisualization = {
         }
         return d.value;
       })
-      .on("mouseover", (d) => {
+      .on("mouseover", function(d) {
+        d3.select(this).attr("stroke", "#FFA500")
         if (config.tooltip) {
-          linkTooltip(d, d3.event, isDragging);
+          linkTooltip(d, d3.event, isDragging, measure, valFormat);
         }
       })
       .on("mousemove", (d) => {
         if (config.tooltip) {
-          updatePosition(d, d3.event, isDragging);
+          updatePosition(d, d3.event, isDragging, "link");
         }
       })
-      .on("mouseleave", hideTooltip);
+      .on("mouseleave", function() {
+        d3.select(this).attr("stroke", config.link_color)
+        hideTooltip()
+      });
 
     var node = svg
       .append("g")
@@ -302,28 +426,36 @@ const vis: ForceDirectedGraphVisualization = {
     var circle = node
       .append("circle")
       .attr("stroke", "#fff")
-      .attr("stroke-width", 1.5)
+      .attr("stroke-width", 1)
       .attr("r", radius)
       .attr("fill", (d) => color(d.group))
-      .on("mouseover", (d) => {
+      .on("mouseover", function(d) {
+        d3.select(this)
+          .attr("stroke-width", 1.5)
+          .attr("stroke", "#FFA500")
         if (config.tooltip) {
           nodeTooltip(d, d3.event, isDragging);
         }
       })
       .on("mousemove", (d) => {
         if (config.tooltip) {
-          updatePosition(d, d3.event, isDragging);
+          updatePosition(d, d3.event, isDragging, "node");
         }
       })
-      .on("mouseleave mousedown", hideTooltip);
+      .on("mouseleave mousedown", function() {
+        d3.select(this)
+          .attr("stroke-width", 1)
+          .attr("stroke", "#fff")
+        hideTooltip()
+      });
   
 
     var labelTypes = [];
     if (config.labelTypes && config.labelTypes.length) {
-      labelTypes = config.labelTypes.split(",");
+      labelTypes = config.labelTypes.split(",").map(e => e.trim());
     }
 
-    if (config.labelTypes && config.labelTypes.length) {
+    if (config.labels && config.labelTypes && config.labelTypes.length) {
       node
         .append("text")
         .style("font-size", config.font_size)
@@ -333,19 +465,11 @@ const vis: ForceDirectedGraphVisualization = {
         .style("font-weight", config.font_weight)
         .text(function (d) {
           if (labelTypes.indexOf(d.group) > -1) {
-            return d.nodeField + " - " + d.id;
+            return d.id;
           } else {
             return null;
           }
         });
-
-      node.append("title").text(function (d) {
-        if (labelTypes.indexOf(d.group) == -1) {
-          return d.nodeField + " - " + d.id;
-        } else {
-          return null;
-        }
-      });
     } else if (config.labels) {
       node
         .append("text")
@@ -358,10 +482,6 @@ const vis: ForceDirectedGraphVisualization = {
           return d.id;
         });
     }
-
-    node.append("title").text(function (d) {
-      return `${d.groupField} - ${d.group}\n${d.nodeField} -  ${d.id}`;
-    });
 
     simulation.on("tick", () => {
       link
