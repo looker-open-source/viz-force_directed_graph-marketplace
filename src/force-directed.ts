@@ -1,7 +1,7 @@
 import * as d3 from "d3";
-import { legendColor } from "d3-svg-legend";
+import  isEqual  from "lodash.isequal"
 import { handleErrors } from "./utils";
-import {nodeTooltip, linkTooltip, updatePosition, hideTooltip, initTooltip } from "./tooltip"
+import {nodeTooltip, linkTooltip, updatePosition, hideTooltip, initTooltip, highlightNeighbors, clearHighlight } from "./tooltip"
 import { Row, Looker, VisualizationDefinition } from "./types";
 
 
@@ -70,7 +70,7 @@ const vis: ForceDirectedGraphVisualization = {
       display: "color",
       display_size: "half",
       label: "Link Color",
-      default: ["#000000"],
+      default: "#000000",
       order: 20,
     },
     linkDistance: {
@@ -114,22 +114,30 @@ const vis: ForceDirectedGraphVisualization = {
       display: "color",
       display_size: "half",
       label: "Label Color",
-      default: ["#000000"],
+      default: "#000000",
       order: 91,
     },
     labels: {
       section: "Labels",
-      type: "boolean",
-      label: "Show Labels",
-      default: true,
+      type: "string",
+      label: "Labels",
+      display: "select",
+      values: [
+        { None: "none"},
+        { "Source Group": "source_group"},
+        { "Target Group": "target_group"},
+        { "All": "all"},
+        { "On Hover": "on_hover"}
+      ],
       display_size: "half",
       order: 92,
+      default: "all"
     },
     labelTypes: {
       section: "Labels",
       type: "string",
       label: "Filter Node Labels",
-      placeholder: "List of values from \"Start\"/\"End\" groups",
+      placeholder: "List of values from \"Source\"/\"Target\" groups",
       default: "",
       order: 93,
     },
@@ -161,32 +169,39 @@ const vis: ForceDirectedGraphVisualization = {
       display: "divider",
       order: 100
     },
+    highlight_selection: {
+      order: 101,
+      section: "Labels",
+      type: "boolean",
+      label: "Focus on Hover",
+      default: true
+    },
     tooltip: {
       section: "Labels",
       type: "boolean",
       label: "Tooltip",
       default: true,
-      order: 101
+      order: 102
     },
     tooltipFont: {
       section: "Labels",
       type: "string",
-      display_size: "half",
       label: "Tooltip Font Size",
       default: "11",
-      order: 102
+      order: 103
     },
     tooltipValFormat: {
       section: "Labels",
       type: "string",
-      display_size: "half",
       label: "Value Format (measure)",
       placeholder: "Spreadsheet-style value format",
-      order: 103
-    }
+      order: 104
+    },
   },
+
   // Set up the initial state of the visualization
   create(element, config) {
+    this.trigger("registerOptions", this.options)
     element.style.fontFamily = `"Open Sans", "Helvetica", sans-serif`;
     this.svg = d3.select(element).append("svg");
   },
@@ -204,7 +219,7 @@ const vis: ForceDirectedGraphVisualization = {
       })
     )
       return;
-
+    
     // Catch the rare edge case on DB-next that the config is unset
     const applyDefualtConfig = () => {
       for (let option in this.options) {
@@ -214,11 +229,12 @@ const vis: ForceDirectedGraphVisualization = {
       }
     };
 
-    // If color_picker is undefined, chances are
-    // all other config attributes are also undefined
-    if (config.color_range === undefined) {
-      applyDefualtConfig();
+    for (let opt in this.options) {
+      if (Object.keys(config).indexOf(opt) < 0) {
+        applyDefualtConfig();
+      }  
     }
+
     this.svg.selectAll("*").remove();
 
     if(config.tooltip) {
@@ -228,7 +244,9 @@ const vis: ForceDirectedGraphVisualization = {
     const NODE_1 = "Node_1"
     const NODE_2 = "Node_2"
     const GROUP_1 = "Group_1"
-    const GROUP_2 = "Group_2"    
+    const GROUP_2 = "Group_2"
+    const SOURCE = "SOURCE"
+    const TARGET = "TARGET"    
     let graphOptions = [NODE_1,  GROUP_1, NODE_2, GROUP_2]
     let labels = ["Source nodes", "Source groups", "Target nodes", "Target groups"]
 
@@ -251,14 +269,14 @@ const vis: ForceDirectedGraphVisualization = {
       })
       this.trigger('registerOptions', newOptions)
     }
-    
+
     const height = element.clientHeight + 20;
     const width = element.clientWidth;
     const radius = config.circle_radius;
     const linkDistance = config.linkDistance;
     const dimensions = queryResponse.fields.dimension_like;
     const measure = queryResponse.fields.measure_like[0] || null;
-    const valFormat = measure.value_format || config.tooltipValFormat || "#,###";
+    const valFormat = measure?.value_format || config?.tooltipValFormat || "#,###";
 
     generateOptions(dimensions)
     if(config.NODE_1 === undefined || config.NODE_1 === ""){
@@ -309,8 +327,10 @@ const vis: ForceDirectedGraphVisualization = {
     // First make the nodes array
     data.forEach((row: Row) => {
       if (
-        row[config[NODE_1]].value === null ||
-        row[config[NODE_2]].value === null
+        row[config[NODE_1]] === undefined   ||
+        row[config[NODE_2]] === undefined   ||
+        row[config[NODE_1]]?.value === null ||
+        row[config[NODE_2]]?.value === null 
       ) {
         return;
       }
@@ -324,6 +344,7 @@ const vis: ForceDirectedGraphVisualization = {
         const newnode = {
           id: row[config[NODE_1]].value,
           group: row[config[GROUP_1]].value,
+          groupType: SOURCE,
           nodeField: nodeDim.label_short || nodeDim.short,
           groupField: groupDim.label_short || groupDim.short,
         };
@@ -339,6 +360,7 @@ const vis: ForceDirectedGraphVisualization = {
         const newnode = {
           id: row[config[NODE_2]].value,
           group: row[config[GROUP_2]].value,
+          groupType: TARGET,
           nodeField: nodeDim.label_short || nodeDim.label,
           groupField: groupDim.label_short || nodeDim.label,
         };
@@ -385,6 +407,9 @@ const vis: ForceDirectedGraphVisualization = {
       .data(links)
       .enter()
       .append("line")
+      .attr("value",  d => d.value)
+      .attr("target", d => d.target.id)
+      .attr("source", d => d.source.id)
       .attr("stroke-width", (d) => {
         var func = {
           sqrt: (d) => Math.sqrt(d),
@@ -412,7 +437,6 @@ const vis: ForceDirectedGraphVisualization = {
         d3.select(this).attr("stroke", config.link_color)
         hideTooltip()
       });
-
     var node = svg
       .append("g")
       .attr("class", "nodes")
@@ -427,6 +451,7 @@ const vis: ForceDirectedGraphVisualization = {
       .append("circle")
       .attr("stroke", "#fff")
       .attr("stroke-width", 1)
+      .attr("id", d => d.id)
       .attr("r", radius)
       .attr("fill", (d) => color(d.group))
       .on("mouseover", function(d) {
@@ -435,6 +460,9 @@ const vis: ForceDirectedGraphVisualization = {
           .attr("stroke", "#FFA500")
         if (config.tooltip) {
           nodeTooltip(d, d3.event, isDragging);
+        }
+        if (config.highlight_selection || config.labels === "on_hover") {
+          highlightNeighbors(d, d3.event, isDragging, config.labels === "on_hover", config.highlight_selection)
         }
       })
       .on("mousemove", (d) => {
@@ -446,9 +474,11 @@ const vis: ForceDirectedGraphVisualization = {
         d3.select(this)
           .attr("stroke-width", 1)
           .attr("stroke", "#fff")
-        hideTooltip()
+        hideTooltip();
+        if(config.highlight_selection || config.labels === "on_hover") {
+          clearHighlight(config.labels === "on_hover");
+        }
       });
-  
 
     var labelTypes = [];
     if (config.labelTypes && config.labelTypes.length) {
@@ -458,6 +488,7 @@ const vis: ForceDirectedGraphVisualization = {
     if (config.labels && config.labelTypes && config.labelTypes.length) {
       node
         .append("text")
+        .attr("id", d => d.id)
         .style("font-size", config.font_size)
         .style("fill", config.font_color)
         .attr("y", -1 * config.circle_radius - 3 + "px")
@@ -470,17 +501,36 @@ const vis: ForceDirectedGraphVisualization = {
             return null;
           }
         });
-    } else if (config.labels) {
+    } else if (config.labels !== "none") {
       node
         .append("text")
+        .attr("id", d => d.id)
         .style("font-size", config.font_size)
         .style("fill", config.font_color)
         .attr("y", -1 * config.circle_radius - 3 + "px")
         .style("text-anchor", "middle")
         .style("font-weight", config.font_weight)
         .text(function (d) {
-          return d.id;
+          if (config.labels === "all" || config.labels === "on_hover") {
+            return d.id
+          } else if(config.labels === "source_group") {
+            if(d.groupType === SOURCE) {
+              return d.id
+            } else {
+              return ""
+            }
+          } else if(config.labels === "target_group") {
+            if(d.groupType === TARGET) {
+              return d.id
+            } else {
+              return ""
+            }
+          }
         });
+    }
+
+    if(config.labels === "on_hover") {
+      d3.selectAll("text").attr("opacity", 0);
     }
 
     simulation.on("tick", () => {

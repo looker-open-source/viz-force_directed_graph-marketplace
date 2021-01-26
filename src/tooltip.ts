@@ -65,10 +65,43 @@ export function updatePosition(d: any, event: MouseEvent, dragging: boolean, typ
   }
 }
 
+function _clear(onHoverLabels, focus) {
+  if (focus) {
+    selectAll("line").attr("opacity", 0.1)
+    selectAll("circle").attr("opacity", 0.2)
+    selectAll("text").attr("opacity", !onHoverLabels ? 0.2 : 0)
+  }
+}
+
+export function highlightNeighbors(d: any, event: MouseEvent, dragging: boolean, onHoverLabels: boolean, focus: boolean) {
+  if(!dragging) {
+    _clear(onHoverLabels, focus);
+    let link_target = selectAll(`line[target="${d.id}"]`)
+    let link_source = selectAll(`line[source="${d.id}"]`)
+    link_target.attr("opacity", 1)
+    link_source.attr("opacity", 1)
+    select(`circle[id="${d.id}"]`).attr("opacity", 1);
+    select(`text[id="${d.id}"]`).attr("opacity", 1);
+    link_target.each((e: any) => {
+      select(`circle[id="${e.source.id}"]`).attr("opacity", 1);
+      select(`text[id="${e.source.id}"]`).attr("opacity", 1);
+    })
+    link_source.each((e: any) => {
+      select(`circle[id="${e.target.id}"]`).attr("opacity", 1);
+      select(`text[id="${e.target.id}"]`).attr("opacity", 1);
+    })
+  }
+}
+
 export function hideTooltip() {
   select("#tooltip").style("opacity", 0).style("left", 0);
 }
 
+export function clearHighlight(onHoverLabels) {
+  selectAll("line").attr("opacity", 1)
+  selectAll("circle").attr("opacity", 1)
+  selectAll("text").attr("opacity", onHoverLabels ? 0 : 1)
+}
 
 function yOffset() {
   return parseInt(select("#tooltip").style("height"), 10) + yPadding
