@@ -27,7 +27,7 @@ The example below depicts all bike share stations in the Boston areas. When ride
 ### Choosing nodes and groups 
 This visualization requires 4 dimensions. Each dimension is either a "source node", "source group", "target node", or "target group". "nodes" will determine what nodes are rendered while "groups" determine the color of each node. You can change what each dimension represents by using the selectors in the "Graph" section of the config panel:
 
-<img src="assets/node_selection.png" width="800px">
+<img src="assets/node_selection.png" width="300px">
 
 - Source nodes
     - Unique values from this dimension are represented as starting nodes in the graph. For example, if plotting bicycle trip data, this would be the ID of the starting station. 
@@ -44,10 +44,10 @@ This visualization requires 4 dimensions. Each dimension is either a "source nod
 ### Links 
 If a measure is included in the query it will be used to determine the stroke width (weight) of the link between each node. However, some values may create links that are too wide. The "Link Weight Function" selector in the "Graph" section of the config panel provides several functions by which to normalize measure values to help prevent this. 
 
-<img src="assets/link_weight_function.png" width="800px">
+<img src="assets/link_weight_function.png" width="300px">
 
 For example, the image on the left is using the "Cube Root" function while the right image is using "log10":
-<img src="assets/link_weight.png" width="800px">
+<img src="assets/link_weight.png" width="300px">
 
 ### Labels
 Labels can be applied to nodes in two ways. 
@@ -58,22 +58,22 @@ Labels can be applied to nodes in two ways.
     - "All", will apply labels to every node.
     - "On Hover" appends labels to a node currently being hovered over and it's immediate neighbors (i.e. the node hovered over + all directly connected nodes). 
 
-<img src="assets/labels_selector.png" width="800px">
+<img src="assets/labels_selector.png" width="300px">
 
 - Filter Label Nodes 
     - This text box takes a comma seperated list of values from either the "source groups" or "target groups" dimensions. This allows for node labeling by specific categories to help highlight nodes of interest. For example, in the image below only nodes from either the source or target groups "Rainey St @ Cummings" and "22nd & Pearl" will have labels:
 
-<img src="assets/labels_filter.png" width="800px">
+<img src="assets/labels_filter.png" width="300px">
 
 ### Tooltip 
 The visualization includes a tooltip which can be toggled on or off. The content of the tooltip differs when hovering over a link and edge. 
 
-<img src="assets/tooltip.png" width="800px">
+<img src="assets/tooltip.png" width="300px">
 
 
 Additionally, there is an option to "Focus on Hover" which will highlight the hovered node and it's immediate neighbors when toggled on. For Example: 
 
-<img src="assets/tooltip_focus.png" width="800px">
+<img src="assets/tooltip_focus.png" width="400px">
 
 
 ### Interested in extending the visualization for your own use case?
