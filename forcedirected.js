@@ -12982,10 +12982,8 @@ var vis = {
                 }
             }
         };
-        for (var opt in this.options) {
-            if (Object.keys(config).indexOf(opt) < 0) {
-                applyDefualtConfig();
-            }
+        if (config.color_range === undefined) {
+            applyDefualtConfig();
         }
         this.svg.selectAll("*").remove();
         if (config.tooltip) {
