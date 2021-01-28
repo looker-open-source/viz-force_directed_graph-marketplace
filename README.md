@@ -20,7 +20,7 @@ The example below depicts all bike share stations in the Boston areas. When ride
 - Arriving station city (dimension)
 - Total bike trips (measure)
 
-![Force-Directed Graph](assets/force-directed-ex.gif)
+![Force-Directed Graph](assets/force-directed-ex-2.gif)
 
 ## User Guide
 

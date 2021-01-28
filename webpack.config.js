@@ -19,10 +19,7 @@ var webpackConfig = {
   resolve: {
     extensions: [".webpack.js", ".web.js", ".ts", ".js"],
   },
-  optimization: {
-    minimize: false,
-  },
-  // plugins: [new UglifyJSPlugin()],
+  plugins: [new UglifyJSPlugin()],
   module: {
     rules: [
       {
