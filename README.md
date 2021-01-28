@@ -47,7 +47,7 @@ If a measure is included in the query it will be used to determine the stroke wi
 <img src="assets/link_weight_function.png" width="300px">
 
 For example, the image on the left is using the "Cube Root" function while the right image is using "log10":
-<img src="assets/link_weight.png" width="300px">
+<img src="assets/link_weight.png" width="500px">
 
 ### Labels
 Labels can be applied to nodes in two ways. 
