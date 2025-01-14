@@ -2723,8 +2723,8 @@ selfsigned@^2.4.1:
     node-forge "^1"
 
 semver@^5.0.1, semver@^5.3.0:
-  version "5.7.1"
-  resolved "https://registry.npmjs.org/semver/-/semver-5.7.1.tgz"
+  version "5.7.2"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-5.7.2.tgz#48d55db737c3287cd4835e17fa13feace1c41ef8"
 
 send@0.19.0:
   version "0.19.0"
