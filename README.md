@@ -2,6 +2,8 @@
 
 # Force-Directed Graph by [Hashpath](https://www.hashpath.com/)
 
+This is not an officially supported Google product. This project is not eligible for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
+
 ### Originally created for Looker's Marketplace by [Hashpath](https://www.hashpath.com/)
 
 Use a force-directed graph to show relationships between entities in your data.
@@ -70,11 +72,9 @@ The visualization includes a tooltip which can be toggled on or off. The content
 
 <img src="assets/tooltip.png" width="300px">
 
-
 Additionally, there is an option to "Focus on Hover" which will highlight the hovered node and it's immediate neighbors when toggled on. For Example: 
 
 <img src="assets/tooltip_focus.png" width="400px">
-
 
 ### Interested in extending the visualization for your own use case?
 
