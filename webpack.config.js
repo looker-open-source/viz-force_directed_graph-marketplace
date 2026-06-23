@@ -8,9 +8,12 @@ var webpackConfig = {
     forcedirected: "./src/force-directed.ts",
   },
   devServer: {
-    contentBase: "./dist",
+    static: {
+      directory: "./dist",
+    },
   },
   output: {
+    hashFunction: 'sha256',
     filename: "[name].js",
     path: __dirname,
     library: "[name]",
