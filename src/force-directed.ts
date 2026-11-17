@@ -5,7 +5,7 @@
 
 import * as d3 from "d3";
 import isEqual from "lodash.isequal";
-import { handleErrors } from "./utils";
+import { handleErrors, parseColorRange } from "./utils";
 import {
   nodeTooltip,
   linkTooltip,
@@ -238,9 +238,7 @@ const vis: ForceDirectedGraphVisualization = {
     };
 
 
-    if (config.color_range === undefined) {
-      applyDefualtConfig();
-    }
+    applyDefualtConfig();
 
     this.svg.selectAll("*").remove();
 
@@ -325,10 +323,10 @@ const vis: ForceDirectedGraphVisualization = {
     };
 
     const colorScale = d3.scaleOrdinal();
-    var color = colorScale.range(d3.schemeCategory10);
-    if (config.color_range != null) {
-      color = colorScale.range(config.color_range);
-    }
+    const parsedColors = parseColorRange(config.color_range);
+    const color = colorScale.range(
+      parsedColors.length > 0 ? parsedColors : d3.schemeCategory10
+    );
 
     var nodes_unique = [];
     var groups_unique = [];
@@ -391,6 +389,7 @@ const vis: ForceDirectedGraphVisualization = {
         message: "Check for null values in either the start or end nodes.",
       });
       done();
+      return;
     }
 
     var manybody = d3.forceManyBody();

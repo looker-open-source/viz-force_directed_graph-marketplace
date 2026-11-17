@@ -102,3 +102,57 @@ export const handleErrors = (
     )
   );
 };
+
+const splitTopLevelCommas = (value: string): string[] => {
+  const parts: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+
+  for (let i = 0; i < value.length; i++) {
+    const ch = value[i];
+    if (ch === "(") {
+      parenDepth++;
+      current += ch;
+    } else if (ch === ")") {
+      if (parenDepth > 0) {
+        parenDepth--;
+      }
+      current += ch;
+    } else if (ch === "," && parenDepth === 0) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  parts.push(current);
+  return parts;
+};
+
+export const parseColorRange = (colorRange: unknown): string[] => {
+  if (colorRange == null) {
+    return [];
+  }
+
+  const rawEntries = Array.isArray(colorRange)
+    ? colorRange
+    : typeof colorRange === "string"
+    ? [colorRange]
+    : [];
+
+  const colors: string[] = [];
+  rawEntries.forEach((entry) => {
+    if (typeof entry !== "string") {
+      return;
+    }
+    splitTopLevelCommas(entry).forEach((token) => {
+      const trimmed = token.trim();
+      const unquoted = trimmed.replace(/^(['"])(.*)\1$/, "$2").trim();
+      if (unquoted) {
+        colors.push(unquoted);
+      }
+    });
+  });
+
+  return colors;
+};
