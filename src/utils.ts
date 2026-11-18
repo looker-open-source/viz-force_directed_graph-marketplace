@@ -147,7 +147,7 @@ export const parseColorRange = (colorRange: unknown): string[] => {
     }
     splitTopLevelCommas(entry).forEach((token) => {
       const trimmed = token.trim();
-      const unquoted = trimmed.replace(/^(['"])(.*)\1$/, "$2").trim();
+      const unquoted = trimmed.replace(/^['"]+|['"]+$/g, "").trim();
       if (unquoted) {
         colors.push(unquoted);
       }
